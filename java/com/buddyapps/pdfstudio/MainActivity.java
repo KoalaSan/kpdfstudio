@@ -332,27 +332,52 @@ public class MainActivity extends Activity {
         ScrollView scroll = DesignSystem.screenScroll(this);
         LinearLayout content = DesignSystem.screenColumn(this);
 
-        LinearLayout headerRow = new LinearLayout(this);
-        headerRow.setOrientation(LinearLayout.HORIZONTAL);
-        headerRow.setGravity(Gravity.CENTER_VERTICAL);
+        List<PdfDocumentItem> allDocs = storageManager.getRecentDocuments();
+        long totalBytes = 0;
+        for (PdfDocumentItem d : allDocs) totalBytes += d.getSizeBytes();
+        String totalSize = totalBytes >= 1024 * 1024
+                ? (totalBytes / (1024 * 1024)) + " MB"
+                : Math.max(1, totalBytes / 1024) + " KB";
 
-        LinearLayout titleCol = new LinearLayout(this);
-        titleCol.setOrientation(LinearLayout.VERTICAL);
-        titleCol.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        LinearLayout hero = new LinearLayout(this);
+        hero.setOrientation(LinearLayout.VERTICAL);
+        hero.setBackground(DesignSystem.createElevatedCardDrawable(this,
+                DesignSystem.SURFACE_ELEVATED, DesignSystem.RADIUS_XL));
+        hero.setPadding(DesignSystem.dp(this, DesignSystem.SP_XL), DesignSystem.dp(this, DesignSystem.SP_XL),
+                DesignSystem.dp(this, DesignSystem.SP_XL), DesignSystem.dp(this, DesignSystem.SP_L));
+        hero.setContentDescription("Resumen de la biblioteca");
 
-        TextView appTitle = DesignSystem.text(this, "PDF Studio", DesignSystem.TEXT_DISPLAY,
+        TextView appTitle = DesignSystem.text(this, "PDF Studio", DesignSystem.TEXT_DISPLAY + 2,
                 DesignSystem.TEXT_PRIMARY, true);
-        appTitle.setLetterSpacing(-0.02f);
-        titleCol.addView(appTitle);
+        appTitle.setLetterSpacing(-0.03f);
+        hero.addView(appTitle);
 
-        TextView appSub = DesignSystem.text(this, "Lectura, edición y herramientas PDF", 13,
-                DesignSystem.TEXT_SECONDARY, false);
-        appSub.setPadding(0, DesignSystem.dp(this, 2), 0, 0);
-        titleCol.addView(appSub);
+        TextView appSub = DesignSystem.text(this, "Lectura, edición y herramientas PDF",
+                DesignSystem.TEXT_BODY, DesignSystem.TEXT_SECONDARY, false);
+        appSub.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_XS), 0, 0);
+        hero.addView(appSub);
 
-        headerRow.addView(titleCol);
-        headerRow.addView(DesignSystem.pill(this, "100% offline", DesignSystem.COLOR_ACCENT_GREEN));
-        content.addView(headerRow);
+        LinearLayout stats = new LinearLayout(this);
+        stats.setOrientation(LinearLayout.HORIZONTAL);
+        stats.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_L), 0, 0);
+
+        View docsStat = DesignSystem.statBlock(this, docLabel(allDocs.size()), "Documentos",
+                DesignSystem.COLOR_PRIMARY);
+        LinearLayout.LayoutParams docsLp = (LinearLayout.LayoutParams) docsStat.getLayoutParams();
+        docsLp.setMargins(0, 0, DesignSystem.dp(this, DesignSystem.SP_M), 0);
+        stats.addView(docsStat, docsLp);
+
+        View sizeStat = DesignSystem.statBlock(this, totalSize, "Espacio usado",
+                DesignSystem.COLOR_ACCENT_GREEN);
+        LinearLayout.LayoutParams sizeLp = (LinearLayout.LayoutParams) sizeStat.getLayoutParams();
+        sizeLp.setMargins(0, 0, DesignSystem.dp(this, DesignSystem.SP_M), 0);
+        stats.addView(sizeStat, sizeLp);
+
+        stats.addView(DesignSystem.statBlock(this, "100%", "Sin conexión",
+                DesignSystem.COLOR_ACCENT_VIOLET));
+        hero.addView(stats);
+
+        content.addView(hero);
 
         EditText searchBar = DesignSystem.createSearchBar(this, "Buscar en la biblioteca");
         searchBar.setText(searchQuery);
@@ -372,20 +397,31 @@ public class MainActivity extends Activity {
         searchLp.setMargins(0, DesignSystem.dp(this, DesignSystem.SP_XL), 0, DesignSystem.dp(this, DesignSystem.SP_L));
         content.addView(searchBar, searchLp);
 
-        LinearLayout actionsRow = new LinearLayout(this);
-        actionsRow.setOrientation(LinearLayout.HORIZONTAL);
-        actionsRow.setPadding(0, 0, 0, DesignSystem.dp(this, DesignSystem.SP_XL));
+        content.addView(DesignSystem.sectionHeader(this, "Accesos rápidos", null, null));
 
-        actionsRow.addView(DesignSystem.createQuickActionCard(this, "files", "Abrir",
+        LinearLayout actionsGrid = new LinearLayout(this);
+        actionsGrid.setOrientation(LinearLayout.VERTICAL);
+
+        LinearLayout actionsRow1 = new LinearLayout(this);
+        actionsRow1.setOrientation(LinearLayout.HORIZONTAL);
+        actionsRow1.addView(DesignSystem.createQuickActionCard(this, "files", "Abrir",
                 DesignSystem.COLOR_PRIMARY, v -> openPdfPicker()));
-        actionsRow.addView(DesignSystem.createQuickActionCard(this, "scan", "Escanear",
+        actionsRow1.addView(DesignSystem.createQuickActionCard(this, "scan", "Escanear",
                 DesignSystem.COLOR_ACCENT_GREEN, v -> openCameraCapture()));
-        actionsRow.addView(DesignSystem.createQuickActionCard(this, "pen", "Crear",
+
+        LinearLayout actionsRow2 = new LinearLayout(this);
+        actionsRow2.setOrientation(LinearLayout.HORIZONTAL);
+        actionsRow2.addView(DesignSystem.createQuickActionCard(this, "pen", "Crear",
                 DesignSystem.COLOR_ACCENT_AMBER, v -> showCreatorScreen()));
-        actionsRow.addView(DesignSystem.createQuickActionCard(this, "merge", "Unir",
+        actionsRow2.addView(DesignSystem.createQuickActionCard(this, "merge", "Unir",
                 DesignSystem.COLOR_ACCENT_VIOLET, v -> showMergeScreen()));
 
-        content.addView(actionsRow);
+        LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        rowLp.setMargins(0, 0, 0, DesignSystem.dp(this, DesignSystem.SP_S));
+        actionsGrid.addView(actionsRow1, rowLp);
+        actionsGrid.addView(actionsRow2);
+        content.addView(actionsGrid);
 
         HorizontalScrollView chipScroll = new HorizontalScrollView(this);
         chipScroll.setHorizontalScrollBarEnabled(false);
@@ -461,21 +497,22 @@ public class MainActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
-        card.setBackground(DesignSystem.createClickableCardDrawable(this,
+        card.setBackground(DesignSystem.createClickableElevatedCardDrawable(this,
                 DesignSystem.SURFACE_CARD, DesignSystem.SURFACE_CARD_PRESSED, DesignSystem.RADIUS_LG));
         card.setPadding(DesignSystem.dp(this, DesignSystem.SP_M), DesignSystem.dp(this, DesignSystem.SP_M),
                 DesignSystem.dp(this, DesignSystem.SP_S), DesignSystem.dp(this, DesignSystem.SP_M));
         card.setClickable(true);
         card.setFocusable(true);
+        card.setContentDescription(item.getTitle());
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.setMargins(0, 0, 0, DesignSystem.dp(this, DesignSystem.SP_M));
         card.setLayoutParams(lp);
 
-        View badge = DesignSystem.iconBadge(this, "doc", DesignSystem.COLOR_ACCENT_ROSE, 44, 22);
+        View badge = DesignSystem.iconBadge(this, "doc", DesignSystem.COLOR_ACCENT_ROSE, 48, 24);
         LinearLayout.LayoutParams badgeLp = new LinearLayout.LayoutParams(
-                DesignSystem.dp(this, 44), DesignSystem.dp(this, 44));
+                DesignSystem.dp(this, 48), DesignSystem.dp(this, 48));
         badgeLp.setMargins(0, 0, DesignSystem.dp(this, DesignSystem.SP_M), 0);
         card.addView(badge, badgeLp);
 
@@ -517,46 +554,6 @@ public class MainActivity extends Activity {
         return card;
     }
 
-    private View buildEmptyStateView(String title, String desc) {
-        LinearLayout empty = new LinearLayout(this);
-        empty.setOrientation(LinearLayout.VERTICAL);
-        empty.setGravity(Gravity.CENTER);
-        empty.setBackground(DesignSystem.createCardDrawable(this, DesignSystem.SURFACE_CARD, DesignSystem.BORDER_SUBTLE, 14));
-        empty.setPadding(DesignSystem.dp(this, 24), DesignSystem.dp(this, 36), DesignSystem.dp(this, 24), DesignSystem.dp(this, 36));
-
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(0, DesignSystem.dp(this, 8), 0, DesignSystem.dp(this, 16));
-        empty.setLayoutParams(lp);
-
-        TextView icon = new TextView(this);
-        icon.setText("📑");
-        icon.setTextSize(40);
-        icon.setGravity(Gravity.CENTER);
-        empty.addView(icon);
-
-        TextView t = new TextView(this);
-        t.setText(title);
-        t.setTextColor(DesignSystem.TEXT_PRIMARY);
-        t.setTextSize(16);
-        t.getPaint().setFakeBoldText(true);
-        t.setPadding(0, DesignSystem.dp(this, 12), 0, DesignSystem.dp(this, 6));
-        empty.addView(t);
-
-        TextView d = new TextView(this);
-        d.setText(desc);
-        d.setTextColor(DesignSystem.TEXT_SECONDARY);
-        d.setTextSize(13);
-        d.setGravity(Gravity.CENTER);
-        empty.addView(d);
-
-        Button openAction = DesignSystem.createPrimaryButton(this, "Abrir Documento", v -> openPdfPicker());
-        LinearLayout.LayoutParams btnLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        btnLp.setMargins(0, DesignSystem.dp(this, 18), 0, 0);
-        empty.addView(openAction, btnLp);
-
-        return empty;
-    }
-
     // ==========================================
     // 3. TAB 2: FILES EXPLORER
     // ==========================================
@@ -571,16 +568,25 @@ public class MainActivity extends Activity {
         long totalBytes = 0;
         for (PdfDocumentItem it : docs) totalBytes += it.getSizeBytes();
 
-        LinearLayout statsRow = new LinearLayout(this);
-        statsRow.setOrientation(LinearLayout.HORIZONTAL);
-        statsRow.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_L), 0, 0);
-        statsRow.addView(DesignSystem.pill(this, docLabel(docs.size()), DesignSystem.COLOR_PRIMARY));
-        LinearLayout.LayoutParams gap = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        gap.setMargins(DesignSystem.dp(this, DesignSystem.SP_S), 0, 0, 0);
-        statsRow.addView(DesignSystem.pill(this, Math.max(1, totalBytes / 1024) + " KB usados",
-                DesignSystem.TEXT_SECONDARY), gap);
-        content.addView(statsRow);
+        String totalSize = totalBytes >= 1024 * 1024
+                ? (totalBytes / (1024 * 1024)) + " MB"
+                : Math.max(1, totalBytes / 1024) + " KB";
+
+        LinearLayout summary = new LinearLayout(this);
+        summary.setOrientation(LinearLayout.HORIZONTAL);
+        summary.setBackground(DesignSystem.createElevatedCardDrawable(this,
+                DesignSystem.SURFACE_ELEVATED, DesignSystem.RADIUS_LG));
+        summary.setPadding(DesignSystem.dp(this, DesignSystem.SP_L), DesignSystem.dp(this, DesignSystem.SP_L),
+                DesignSystem.dp(this, DesignSystem.SP_L), DesignSystem.dp(this, DesignSystem.SP_L));
+        LinearLayout.LayoutParams summaryLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        summaryLp.setMargins(0, DesignSystem.dp(this, DesignSystem.SP_L), 0, 0);
+        summary.setLayoutParams(summaryLp);
+        summary.addView(DesignSystem.statBlock(this, docLabel(docs.size()), "En la biblioteca",
+                DesignSystem.COLOR_PRIMARY));
+        summary.addView(DesignSystem.statBlock(this, totalSize, "Espacio usado",
+                DesignSystem.COLOR_ACCENT_GREEN));
+        content.addView(summary);
 
         EditText searchBar = DesignSystem.createSearchBar(this, "Buscar por nombre");
         searchBar.setText(searchQuery);
@@ -648,9 +654,7 @@ public class MainActivity extends Activity {
         content.addView(DesignSystem.screenHeader(this, "Herramientas",
                 "Todo se procesa en el dispositivo, sin subir archivos"));
 
-        TextView organize = DesignSystem.sectionTitle(this, "Organizar");
-        organize.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_XL), 0, DesignSystem.dp(this, DesignSystem.SP_M));
-        content.addView(organize);
+        content.addView(sectionWithAccent("Organizar"));
 
         content.addView(DesignSystem.createToolRow(this, "merge", "Unir PDFs",
                 "Combina varios documentos y elige el orden de las páginas.",
@@ -679,9 +683,7 @@ public class MainActivity extends Activity {
                     }
                 }));
 
-        TextView create = DesignSystem.sectionTitle(this, "Crear");
-        create.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_M), 0, DesignSystem.dp(this, DesignSystem.SP_M));
-        content.addView(create);
+        content.addView(sectionWithAccent("Crear"));
 
         content.addView(DesignSystem.createToolRow(this, "scan", "Escanear con cámara",
                 "Fotografía un documento y conviértelo en PDF A4.",
@@ -695,9 +697,7 @@ public class MainActivity extends Activity {
                 "Redacta y exporta un PDF con maquetación automática.",
                 DesignSystem.COLOR_ACCENT_AMBER, v -> showCreatorScreen()));
 
-        TextView test = DesignSystem.sectionTitle(this, "Pruebas");
-        test.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_M), 0, DesignSystem.dp(this, DesignSystem.SP_M));
-        content.addView(test);
+        content.addView(sectionWithAccent("Pruebas"));
 
         content.addView(DesignSystem.createToolRow(this, "book", "Documento de prueba",
                 "Genera un PDF de ejemplo para probar el visor y la búsqueda.",
@@ -774,8 +774,8 @@ public class MainActivity extends Activity {
 
         LinearLayout about = new LinearLayout(this);
         about.setOrientation(LinearLayout.VERTICAL);
-        about.setBackground(DesignSystem.createCardDrawable(this,
-                DesignSystem.SURFACE_CARD, DesignSystem.BORDER_SUBTLE, DesignSystem.RADIUS_LG));
+        about.setBackground(DesignSystem.createElevatedCardDrawable(this,
+                DesignSystem.SURFACE_CARD, DesignSystem.RADIUS_LG));
         about.setPadding(DesignSystem.dp(this, DesignSystem.SP_L), DesignSystem.dp(this, DesignSystem.SP_L),
                 DesignSystem.dp(this, DesignSystem.SP_L), DesignSystem.dp(this, DesignSystem.SP_L));
 
@@ -793,7 +793,7 @@ public class MainActivity extends Activity {
         aboutTitles.setLayoutParams(aboutLp);
         aboutTitles.addView(DesignSystem.text(this, "PDF Studio", DesignSystem.TEXT_SUBTITLE,
                 DesignSystem.TEXT_PRIMARY, true));
-        aboutTitles.addView(DesignSystem.text(this, "v3.4 · 100% offline", DesignSystem.TEXT_CAPTION,
+        aboutTitles.addView(DesignSystem.text(this, "v3.5 · 100% offline", DesignSystem.TEXT_CAPTION,
                 DesignSystem.TEXT_SECONDARY, false));
         aboutHeader.addView(aboutTitles);
         about.addView(aboutHeader);
@@ -810,13 +810,24 @@ public class MainActivity extends Activity {
         return scroll;
     }
 
+    /** Section title with a coloured accent bar for clearer grouping. */
+    private View sectionWithAccent(String title) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_L), 0, DesignSystem.dp(this, DesignSystem.SP_M));
+        row.addView(DesignSystem.createAccentBar(this, DesignSystem.COLOR_PRIMARY));
+        row.addView(DesignSystem.sectionTitle(this, title));
+        return row;
+    }
+
     /** Row with icon, title/description and an optional trailing view. */
     private LinearLayout buildSettingRow(String iconName, String title, String desc, View trailing) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setBackground(DesignSystem.createCardDrawable(this,
-                DesignSystem.SURFACE_CARD, DesignSystem.BORDER_SUBTLE, DesignSystem.RADIUS_LG));
+        row.setBackground(DesignSystem.createElevatedCardDrawable(this,
+                DesignSystem.SURFACE_CARD, DesignSystem.RADIUS_LG));
         row.setPadding(DesignSystem.dp(this, DesignSystem.SP_L), DesignSystem.dp(this, DesignSystem.SP_M),
                 DesignSystem.dp(this, DesignSystem.SP_L), DesignSystem.dp(this, DesignSystem.SP_M));
         row.setMinimumHeight(DesignSystem.dp(this, 64));
@@ -2031,13 +2042,13 @@ public class MainActivity extends Activity {
     private void loadDemoDocument() {
         try {
             File demo = creatorCore.createPdfFromText(
-                    "PDF Studio v3.3 - Documento de prueba",
+                    "PDF Studio v3.5 - Documento de prueba",
                     "Este PDF de ejemplo se ha generado localmente para probar el visor, la búsqueda de texto y las herramientas de página.\n\n" +
                     "Incluye: navegación y zoom, modo noche, marcadores, buscador con resaltado, extracción de rangos, unión de varios PDF, compresión JPEG y anotaciones.\n\n" +
                     "Busca la palabra 'ejemplo' con el botón de lupa para comprobar la búsqueda real dentro del contenido."
             );
-            storageManager.registerDocument("Guía Interactiva v3.3", demo.getAbsolutePath(), "", demo.length(), 1, true);
-            openPdfFile(demo, "Documento Demo v3.3");
+            storageManager.registerDocument("Guía Interactiva v3.5", demo.getAbsolutePath(), "", demo.length(), 1, true);
+            openPdfFile(demo, "Documento Demo v3.5");
         } catch (Exception e) {
             Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }

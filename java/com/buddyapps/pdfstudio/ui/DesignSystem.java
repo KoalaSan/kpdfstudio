@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.view.Gravity;
 import android.view.View;
@@ -49,8 +51,8 @@ public class DesignSystem {
     public static int COLOR_ACCENT_VIOLET = Color.parseColor("#A78BFA");
 
     public static int TEXT_PRIMARY = Color.parseColor("#F4F5F7");
-    public static int TEXT_SECONDARY = Color.parseColor("#A0A6B4");
-    public static int TEXT_TERTIARY = Color.parseColor("#6C7280");
+    public static int TEXT_SECONDARY = Color.parseColor("#B0B6C4");
+    public static int TEXT_TERTIARY = Color.parseColor("#8A919F");
 
     public static int SCRIM = Color.parseColor("#B3000000");
 
@@ -84,8 +86,8 @@ public class DesignSystem {
             COLOR_ACCENT_VIOLET = Color.parseColor("#A78BFA");
 
             TEXT_PRIMARY = Color.parseColor("#F4F5F7");
-            TEXT_SECONDARY = Color.parseColor("#A0A6B4");
-            TEXT_TERTIARY = Color.parseColor("#6C7280");
+            TEXT_SECONDARY = Color.parseColor("#B0B6C4");
+            TEXT_TERTIARY = Color.parseColor("#8A919F");
             SCRIM = Color.parseColor("#B3000000");
         } else {
             BG_APP = Color.parseColor("#F6F7F9");
@@ -109,8 +111,8 @@ public class DesignSystem {
             COLOR_ACCENT_VIOLET = Color.parseColor("#7C5CD6");
 
             TEXT_PRIMARY = Color.parseColor("#14161B");
-            TEXT_SECONDARY = Color.parseColor("#5B6270");
-            TEXT_TERTIARY = Color.parseColor("#8A909C");
+            TEXT_SECONDARY = Color.parseColor("#545B69");
+            TEXT_TERTIARY = Color.parseColor("#667085");
             SCRIM = Color.parseColor("#66000000");
         }
     }
@@ -131,12 +133,12 @@ public class DesignSystem {
     public static final int RADIUS_LG = 16;
     public static final int RADIUS_XL = 20;
 
-    public static final int TEXT_DISPLAY = 28;
-    public static final int TEXT_TITLE = 20;
-    public static final int TEXT_SUBTITLE = 16;
-    public static final int TEXT_BODY = 14;
-    public static final int TEXT_CAPTION = 12;
-    public static final int TEXT_MICRO = 11;
+    public static final int TEXT_DISPLAY = 30;
+    public static final int TEXT_TITLE = 22;
+    public static final int TEXT_SUBTITLE = 17;
+    public static final int TEXT_BODY = 15;
+    public static final int TEXT_CAPTION = 13;
+    public static final int TEXT_MICRO = 12;
 
     public static final int TOUCH_MIN = 44;
     public static final int TOUCH_COMFORT = 48;
@@ -181,6 +183,28 @@ public class DesignSystem {
         GradientDrawable normal = createCardDrawable(context, normalColor, BORDER_SUBTLE, radiusDp);
         sld.addState(new int[]{android.R.attr.state_pressed}, pressed);
         sld.addState(new int[]{}, normal);
+        return sld;
+    }
+
+    /** Card with a subtle offset shadow layer: gives real depth without AndroidX. */
+    public static Drawable createElevatedCardDrawable(Context context, int bgColor, float radiusDp) {
+        GradientDrawable shadow = new GradientDrawable();
+        shadow.setColor(isDark() ? Color.parseColor("#73000000") : Color.parseColor("#22182433"));
+        shadow.setCornerRadius(dp(context, radiusDp));
+        LayerDrawable layered = new LayerDrawable(new Drawable[]{
+                shadow, createCardDrawable(context, bgColor, BORDER_SUBTLE, radiusDp)
+        });
+        layered.setLayerInset(0, 0, dp(context, 2), 0, 0);
+        return layered;
+    }
+
+    /** Clickable card with elevation and a visible pressed state. */
+    public static StateListDrawable createClickableElevatedCardDrawable(Context context,
+                                                                        int normalColor, int pressedColor, float radiusDp) {
+        StateListDrawable sld = new StateListDrawable();
+        sld.addState(new int[]{android.R.attr.state_pressed},
+                createElevatedCardDrawable(context, pressedColor, radiusDp));
+        sld.addState(new int[]{}, createElevatedCardDrawable(context, normalColor, radiusDp));
         return sld;
     }
 
@@ -429,17 +453,18 @@ public class DesignSystem {
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setGravity(Gravity.CENTER);
-        card.setBackground(createClickableCardDrawable(context, SURFACE_CARD, SURFACE_CARD_PRESSED, RADIUS_LG));
+        card.setBackground(createClickableElevatedCardDrawable(context, SURFACE_CARD, SURFACE_CARD_PRESSED, RADIUS_LG));
         card.setPadding(dp(context, SP_M), dp(context, SP_L), dp(context, SP_M), dp(context, SP_L));
         card.setClickable(true);
         card.setFocusable(true);
-        card.setMinimumHeight(dp(context, 92));
+        card.setContentDescription(title);
+        card.setMinimumHeight(dp(context, 96));
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         lp.setMargins(dp(context, SP_XS), 0, dp(context, SP_XS), 0);
         card.setLayoutParams(lp);
 
-        card.addView(iconBadge(context, iconName, accentColor, 40, 20));
+        card.addView(iconBadge(context, iconName, accentColor, 44, 22));
 
         TextView label = text(context, title, TEXT_CAPTION, TEXT_PRIMARY, true);
         label.setGravity(Gravity.CENTER);
@@ -455,19 +480,20 @@ public class DesignSystem {
         LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setBackground(createClickableCardDrawable(context, SURFACE_CARD, SURFACE_CARD_PRESSED, RADIUS_LG));
+        row.setBackground(createClickableElevatedCardDrawable(context, SURFACE_CARD, SURFACE_CARD_PRESSED, RADIUS_LG));
         row.setPadding(dp(context, SP_L), dp(context, SP_M), dp(context, SP_M), dp(context, SP_M));
         row.setClickable(true);
         row.setFocusable(true);
-        row.setMinimumHeight(dp(context, 68));
+        row.setContentDescription(title + ". " + desc);
+        row.setMinimumHeight(dp(context, 76));
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.setMargins(0, 0, 0, dp(context, SP_M));
         row.setLayoutParams(lp);
 
-        View badge = iconBadge(context, iconName, accentColor, 40, 20);
-        LinearLayout.LayoutParams badgeLp = new LinearLayout.LayoutParams(dp(context, 40), dp(context, 40));
+        View badge = iconBadge(context, iconName, accentColor, 48, 24);
+        LinearLayout.LayoutParams badgeLp = new LinearLayout.LayoutParams(dp(context, 48), dp(context, 48));
         badgeLp.setMargins(0, 0, dp(context, SP_M), 0);
         row.addView(badge, badgeLp);
 
@@ -475,15 +501,19 @@ public class DesignSystem {
         textCol.setOrientation(LinearLayout.VERTICAL);
         textCol.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-        TextView t = text(context, title, 15, TEXT_PRIMARY, true);
+        TextView t = text(context, title, TEXT_SUBTITLE, TEXT_PRIMARY, true);
         textCol.addView(t);
 
         TextView d = text(context, desc, TEXT_CAPTION, TEXT_SECONDARY, false);
         d.setPadding(0, dp(context, 3), 0, 0);
+        d.setMaxLines(2);
+        d.setEllipsize(android.text.TextUtils.TruncateAt.END);
         textCol.addView(d);
 
         row.addView(textCol);
-        row.addView(Icons.view(context, "chevron", 18, TEXT_TERTIARY));
+        View chevron = Icons.view(context, "chevron", 20, TEXT_TERTIARY);
+        chevron.setPadding(dp(context, SP_S), 0, 0, 0);
+        row.addView(chevron);
 
         row.setOnClickListener(onClick);
         return row;
@@ -497,7 +527,7 @@ public class DesignSystem {
                 selected ? withAlpha(COLOR_PRIMARY, 0.45f) : BORDER_SUBTLE,
                 RADIUS_SM * 2));
         chip.setPadding(dp(context, SP_L), dp(context, SP_S), dp(context, SP_L), dp(context, SP_S));
-        chip.setMinHeight(dp(context, 36));
+        chip.setMinHeight(dp(context, 44));
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -633,6 +663,25 @@ public class DesignSystem {
         pill.setBackground(createCardDrawable(context, withAlpha(color, 0.12f), withAlpha(color, 0.28f), RADIUS_SM));
         pill.setPadding(dp(context, SP_S), dp(context, 3), dp(context, SP_S), dp(context, 3));
         return pill;
+    }
+
+    /** Compact statistic used in dashboard/summary cards. */
+    public static View statBlock(Context context, String value, String label, int accentColor) {
+        LinearLayout block = new LinearLayout(context);
+        block.setOrientation(LinearLayout.VERTICAL);
+
+        TextView v = text(context, value, TEXT_TITLE, accentColor, true);
+        v.setIncludeFontPadding(false);
+        block.addView(v);
+
+        TextView l = text(context, label, TEXT_MICRO, TEXT_SECONDARY, false);
+        l.setPadding(0, dp(context, 2), 0, 0);
+        block.addView(l);
+
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        block.setLayoutParams(lp);
+        return block;
     }
 
     // ------------------------------------------------------------------
