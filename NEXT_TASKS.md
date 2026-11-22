@@ -1,0 +1,13 @@
+# Cola de tareas — PDF Studio
+
+Prioridades: P0 pérdida de datos / roto, P1 simulado o no cableado, P2 UI-accesibilidad, P3 rendimiento, P4 documentación.
+
+| ID | Título | Prioridad | Criterio de aceptación verificable | Estado |
+| :--- | :--- | :--- | :--- | :--- |
+| T-01 | Corregir fuga de memoria en el visor (bitmaps) | P3 | Navegar 20 páginas y hacer zoom repetido sin crash; la app sigue respondiendo y las páginas se renderizan | implementado, sin verificar en dispositivo |
+| T-02 | No asignar overlay de búsqueda cuando no hay coincidencias | P3 | Visor sin cambios visuales; al buscar y resaltar sigue funcionando | implementado, sin verificar en dispositivo |
+| T-03 | Importar todos los PDFs seleccionados al unir (ClipData) | P1 | El selector multiselección importa cada URI; al menos la ruta de un solo archivo sigue funcionando | implementado, sin verificar en dispositivo |
+| T-04 | Resaltado de búsqueda tras rotar la página | P1 | Buscar "ejemplo", girar 90°, el resaltado sigue visible sobre la palabra | implementado, sin verificar en dispositivo |
+| T-05 | Textos obsoletos v3.1 → v3.3 | P4 | El documento de prueba y la guía muestran v3.3 en pantalla | implementado como v3.4, sin verificar |
+| T-06 | Re-verificación completa en dispositivo (regresiones) | P0 | Abrir, buscar, comprimir, unir, escanear y anotar sin errores nuevos | bloqueado: instalar v3.4 con la firma correcta |
+| T-07 | Instalar v3.4 conservando la firma de v3.3 | P0 | El instalador actualiza sin error "firmas no coinciden"; versionCode 10 en el dispositivo | en curso: APK recompilado con `/root/.buddy/keys/apps.jks` (SHA-256 `c8075235…`) |

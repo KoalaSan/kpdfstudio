@@ -11,6 +11,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -216,6 +217,7 @@ public class MainActivity extends Activity {
     // ==========================================
     private void showMainScreen() {
         currentScreen = Screen.MAIN;
+        releaseViewerBitmaps();
         rootLayout.removeAllViews();
 
         LinearLayout shell = new LinearLayout(this);
@@ -791,7 +793,7 @@ public class MainActivity extends Activity {
         aboutTitles.setLayoutParams(aboutLp);
         aboutTitles.addView(DesignSystem.text(this, "PDF Studio", DesignSystem.TEXT_SUBTITLE,
                 DesignSystem.TEXT_PRIMARY, true));
-        aboutTitles.addView(DesignSystem.text(this, "v3.3 · 100% offline", DesignSystem.TEXT_CAPTION,
+        aboutTitles.addView(DesignSystem.text(this, "v3.4 · 100% offline", DesignSystem.TEXT_CAPTION,
                 DesignSystem.TEXT_SECONDARY, false));
         aboutHeader.addView(aboutTitles);
         about.addView(aboutHeader);
@@ -848,6 +850,7 @@ public class MainActivity extends Activity {
     private void showViewerScreen(String title) {
         currentScreen = Screen.VIEWER;
         activeTitle = title;
+        releaseViewerBitmaps();
         rootLayout.removeAllViews();
         searchResults = new ArrayList<>();
         currentSearchIndex = -1;
@@ -1068,6 +1071,7 @@ public class MainActivity extends Activity {
     }
 
     private void renderCurrentPage(int index) {
+        Bitmap previousBitmap = currentPageBitmap;
         Bitmap bitmap = rendererCore.renderPage(index, viewerImageView);
         if (bitmap != null) {
             currentPageBitmap = bitmap;
@@ -1084,6 +1088,7 @@ public class MainActivity extends Activity {
             viewerVerticalScroll.scrollTo(0, 0);
             viewerHorizontalScroll.scrollTo(0, 0);
             drawHighlightOverlay(index);
+            recyclePageBitmap(previousBitmap, bitmap);
         } else {
             // OOM path: rendererCore already reset zoom to 1.0, retry once.
             if (rendererCore.getZoom() > 1.0f) {
@@ -1095,8 +1100,47 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** Frees the previous page bitmap only after the new one is on screen. */
+    private void recyclePageBitmap(Bitmap oldBitmap, Bitmap newBitmap) {
+        if (oldBitmap != null && oldBitmap != newBitmap && !oldBitmap.isRecycled()) {
+            oldBitmap.recycle();
+        }
+    }
+
+    /** Called when leaving the viewer: the ImageViews are removed, so their bitmaps can go too. */
+    private void releaseViewerBitmaps() {
+        if (currentPageBitmap != null && !currentPageBitmap.isRecycled()) currentPageBitmap.recycle();
+        currentPageBitmap = null;
+        if (highlightImageView != null) setHighlightBitmap(null);
+        highlightImageView = null;
+        viewerImageView = null;
+    }
+
+    /** Replaces the highlight overlay and releases the bitmap it previously held. */
+    private void setHighlightBitmap(Bitmap overlay) {
+        android.graphics.drawable.Drawable old = highlightImageView.getDrawable();
+        highlightImageView.setImageBitmap(overlay);
+        if (old instanceof BitmapDrawable) {
+            Bitmap oldBitmap = ((BitmapDrawable) old).getBitmap();
+            if (oldBitmap != null && oldBitmap != overlay && !oldBitmap.isRecycled()) oldBitmap.recycle();
+        }
+    }
+
     private void drawHighlightOverlay(int pageIndex) {
         if (highlightImageView == null || currentPageBitmap == null) return;
+
+        boolean hasMatchOnPage = false;
+        if (!searchResults.isEmpty()) {
+            for (PdfTextSearchCore.SearchResult r : searchResults) {
+                if (r.pageIndex == pageIndex) { hasMatchOnPage = true; break; }
+            }
+        }
+        if (!hasMatchOnPage) {
+            // Avoid allocating a full-page ARGB bitmap on every render when there is nothing to highlight.
+            setHighlightBitmap(null);
+            return;
+        }
+
         Bitmap overlay = Bitmap.createBitmap(currentPageBitmap.getWidth(), currentPageBitmap.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(overlay);
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -1120,23 +1164,42 @@ public class MainActivity extends Activity {
                 }
             }
         }
-        highlightImageView.setImageBitmap(overlay);
+        setHighlightBitmap(overlay);
     }
 
     private RectF resultRect(PdfTextSearchCore.SearchResult r, Bitmap bitmap) {
         int pw = rendererCore.getPageWidth();
         int ph = rendererCore.getPageHeight();
         if (pw <= 0 || ph <= 0 || r.y < 0 || r.y > ph) return null;
-        if (rendererCore.getRotationDegrees() != 0) return null; // avoid wrong coordinates when rotated
-        float sx = bitmap.getWidth() / (float) pw;
-        float sy = bitmap.getHeight() / (float) ph;
+
+        int rotation = ((rendererCore.getRotationDegrees() % 360) + 360) % 360;
+        boolean swapped = rotation == 90 || rotation == 270;
+        // Coordinates from the text layer are relative to the unrotated page.
+        int baseW = swapped ? bitmap.getHeight() : bitmap.getWidth();
+        int baseH = swapped ? bitmap.getWidth() : bitmap.getHeight();
+        float sx = baseW / (float) pw;
+        float sy = baseH / (float) ph;
         float left = r.x * sx;
         float top = (ph - r.y - Math.max(r.fontSize, 8f)) * sy;
         float right = left + Math.max(8f, r.matched.length() * Math.max(r.fontSize, 8f) * 0.62f) * sx;
         float bottom = (ph - r.y) * sy;
-        if (right < 0 || bottom < 0 || left > bitmap.getWidth() || top > bitmap.getHeight()) return null;
-        return new RectF(Math.max(0, left), Math.max(0, top),
-                Math.min(bitmap.getWidth(), right), Math.min(bitmap.getHeight(), bottom));
+
+        // Map the unrotated rectangle into the rendered (possibly rotated) bitmap.
+        float outLeft = left, outTop = top, outRight = right, outBottom = bottom;
+        if (rotation == 90) {
+            outLeft = baseH - bottom; outRight = baseH - top;
+            outTop = left; outBottom = right;
+        } else if (rotation == 180) {
+            outLeft = baseW - right; outRight = baseW - left;
+            outTop = baseH - bottom; outBottom = baseH - top;
+        } else if (rotation == 270) {
+            outLeft = top; outRight = bottom;
+            outTop = baseW - right; outBottom = baseW - left;
+        }
+
+        if (outRight < 0 || outBottom < 0 || outLeft > bitmap.getWidth() || outTop > bitmap.getHeight()) return null;
+        return new RectF(Math.max(0, outLeft), Math.max(0, outTop),
+                Math.min(bitmap.getWidth(), outRight), Math.min(bitmap.getHeight(), outBottom));
     }
 
     private void toggleNightMode() {
@@ -1420,6 +1483,7 @@ public class MainActivity extends Activity {
     // ==========================================
     private void showMergeScreen() {
         currentScreen = Screen.MERGE;
+        releaseViewerBitmaps();
         rootLayout.removeAllViews();
 
         LinearLayout shell = new LinearLayout(this);
@@ -1630,15 +1694,16 @@ public class MainActivity extends Activity {
         startActivityForResult(intent, REQUEST_MERGE_IMPORT);
     }
 
-    private void handleIncomingPdfForMerge(Uri uri) {
-        File imported = storageManager.importUriToStorage(uri, "documento_" + System.currentTimeMillis() + ".pdf");
+    private boolean handleIncomingPdfForMerge(Uri uri) {
+        File imported = storageManager.importUriToStorage(uri,
+                "documento_" + System.currentTimeMillis() + "_" + Math.abs(uri.hashCode()) + ".pdf");
         if (imported != null && imported.exists()) {
             storageManager.registerDocument("Documento Importado", imported.getAbsolutePath(), uri.toString(), imported.length(),
                     Math.max(1, new PdfTextSearchCore().countPages(imported)), false);
-            showMergeScreen();
-        } else {
-            Toast.makeText(this, "No se pudo importar el PDF", Toast.LENGTH_SHORT).show();
+            return true;
         }
+        Toast.makeText(this, "No se pudo importar el PDF", Toast.LENGTH_SHORT).show();
+        return false;
     }
 
     // ==========================================
@@ -1737,6 +1802,7 @@ public class MainActivity extends Activity {
     // ==========================================
     private void showCreatorScreen() {
         currentScreen = Screen.CREATOR;
+        releaseViewerBitmaps();
         rootLayout.removeAllViews();
 
         LinearLayout shell = new LinearLayout(this);
@@ -1869,11 +1935,22 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == REQUEST_MERGE_IMPORT) {
-            if (resultCode == RESULT_OK && data != null && data.getData() != null) {
-                handleIncomingPdfForMerge(data.getData());
-            } else {
-                showMergeScreen();
+            if (resultCode == RESULT_OK && data != null) {
+                int imported = 0;
+                android.content.ClipData clip = data.getClipData();
+                if (clip != null) {
+                    for (int i = 0; i < clip.getItemCount(); i++) {
+                        if (handleIncomingPdfForMerge(clip.getItemAt(i).getUri())) imported++;
+                    }
+                } else if (data.getData() != null) {
+                    if (handleIncomingPdfForMerge(data.getData())) imported++;
+                }
+                if (imported > 1) {
+                    Toast.makeText(this, imported + " PDFs importados. Márcalos para unirlos.",
+                            Toast.LENGTH_LONG).show();
+                }
             }
+            showMergeScreen();
             return;
         }
         if (resultCode != RESULT_OK) return;
@@ -1954,13 +2031,13 @@ public class MainActivity extends Activity {
     private void loadDemoDocument() {
         try {
             File demo = creatorCore.createPdfFromText(
-                    "PDF Studio v3.1 - Documento de prueba",
+                    "PDF Studio v3.3 - Documento de prueba",
                     "Este PDF de ejemplo se ha generado localmente para probar el visor, la búsqueda de texto y las herramientas de página.\n\n" +
-                    "Incluye: navegación y zoom, modo noche, marcadores, buscador con resaltado, extracción de rangos, union de varios PDF, compresion JPEG y anotaciones.\n\n" +
-                    "Busca la palabra 'ejemplo' con el boton de lupa para comprobar la busqueda real dentro del contenido."
+                    "Incluye: navegación y zoom, modo noche, marcadores, buscador con resaltado, extracción de rangos, unión de varios PDF, compresión JPEG y anotaciones.\n\n" +
+                    "Busca la palabra 'ejemplo' con el botón de lupa para comprobar la búsqueda real dentro del contenido."
             );
-            storageManager.registerDocument("Guía Interactiva v3.1", demo.getAbsolutePath(), "", demo.length(), 1, true);
-            openPdfFile(demo, "Documento Demo v3.1");
+            storageManager.registerDocument("Guía Interactiva v3.3", demo.getAbsolutePath(), "", demo.length(), 1, true);
+            openPdfFile(demo, "Documento Demo v3.3");
         } catch (Exception e) {
             Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }

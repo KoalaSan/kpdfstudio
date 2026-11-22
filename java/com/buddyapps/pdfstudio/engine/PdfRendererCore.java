@@ -124,9 +124,17 @@ public class PdfRendererCore {
 
             Bitmap finalBitmap = baseBitmap;
             if (rotationDegrees != 0) {
-                Matrix matrix = new Matrix();
-                matrix.postRotate(rotationDegrees);
-                finalBitmap = Bitmap.createBitmap(baseBitmap, 0, 0, baseBitmap.getWidth(), baseBitmap.getHeight(), matrix, true);
+                try {
+                    Matrix matrix = new Matrix();
+                    matrix.postRotate(rotationDegrees);
+                    Bitmap rotated = Bitmap.createBitmap(baseBitmap, 0, 0, baseBitmap.getWidth(), baseBitmap.getHeight(), matrix, true);
+                    // The rotated copy is a separate bitmap: keep only the one we return.
+                    baseBitmap.recycle();
+                    finalBitmap = rotated;
+                } catch (OutOfMemoryError oom) {
+                    baseBitmap.recycle();
+                    throw oom;
+                }
             }
 
             if (targetView != null) {
