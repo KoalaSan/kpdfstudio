@@ -18,7 +18,7 @@ import java.io.File;
  * Exposes only files inside filesDir/documents.
  */
 public class PdfStudioFileProvider extends ContentProvider {
-    public static final String AUTHORITY = "com.buddyapps.pdfstudio.fileprovider";
+    public static final String AUTHORITY = "com.buddyapps.pdfstudio34.fileprovider";
 
     private static final UriMatcher MATCHER = new UriMatcher(UriMatcher.NO_MATCH);
     static {

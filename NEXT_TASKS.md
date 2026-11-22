@@ -10,4 +10,5 @@ Prioridades: P0 pérdida de datos / roto, P1 simulado o no cableado, P2 UI-acces
 | T-04 | Resaltado de búsqueda tras rotar la página | P1 | Buscar "ejemplo", girar 90°, el resaltado sigue visible sobre la palabra | implementado, sin verificar en dispositivo |
 | T-05 | Textos obsoletos v3.1 → v3.3 | P4 | El documento de prueba y la guía muestran v3.3 en pantalla | implementado como v3.4, sin verificar |
 | T-06 | Re-verificación completa en dispositivo (regresiones) | P0 | Abrir, buscar, comprimir, unir, escanear y anotar sin errores nuevos | bloqueado: instalar v3.4 con la firma correcta |
-| T-07 | Instalar v3.4 conservando la firma de v3.3 | P0 | El instalador actualiza sin error "firmas no coinciden"; versionCode 10 en el dispositivo | en curso: APK recompilado con `/root/.buddy/keys/apps.jks` (SHA-256 `c8075235…`) |
+| T-07 | Instalar v3.4 sin destruir la v3.3 | P0 | `com.buddyapps.pdfstudio34` (PDF Studio 3.4) aparece instalado junto a `com.buddyapps.pdfstudio` | APK firmado y listo; instalación pendiente porque el móvil rechaza acciones de pantalla |
+| T-08 | Verificar la app nueva en dispositivo | P0 | Abrir, buscar, comprimir, unir, escanear y anotar en `com.buddyapps.pdfstudio34` sin errores nuevos | pendiente |
