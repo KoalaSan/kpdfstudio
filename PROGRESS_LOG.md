@@ -19,3 +19,9 @@
 - Se cambió el `package` del manifest a `com.buddyapps.pdfstudio34`, se fully-qualificaron `.MainActivity` y `.PdfStudioFileProvider`, se cambió la autoridad del provider a `com.buddyapps.pdfstudio34.fileprovider` y el label a "PDF Studio 3.4"; las clases Java siguen en `com.buddyapps.pdfstudio` y compilan sin cambios.
 - APK final: `com.buddyapps.pdfstudio34`, versionCode 10, versionName 3.4, firmado con `c8075235…`, SHA-256 `441b5b0834ba39e932557ad57576bd74847784634f022d61bd84b341dc714b9d`.
 - La instalación sigue pendiente: las herramientas de teléfono informan "SCREEN CHANGED" de forma repetida.
+
+## 2026-11-22 — Instalación completada
+- Tras varios reintentos, `phone_install_apk` abrió el instalador y `phone_wait_for_install` confirmó: `Installed com.buddyapps.pdfstudio34 (versionCode 10). The user confirmed the install.`
+- `pm path` devuelve `/data/app/~~uWXaE8NQJPwrS3GmNGlG_Q==/com.buddyapps.pdfstudio34-9W4ZYV-d74AosMLfItX5UA==/base.apk`; `dumpsys package` confirma versionName 3.4.
+- La app se abrió en la pantalla de fondo de Buddy y el proceso sigue vivo (`pidof` devolvió 21348), así que arranca sin crash inmediato. Buddy no puede leer esa ventana (la app oculta su contenido), por lo que la verificación funcional completa (T-08) sigue pendiente.
+- La v3.3 original (`com.buddyapps.pdfstudio`) permanece instalada con sus documentos intactos.
