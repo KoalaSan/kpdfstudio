@@ -304,7 +304,7 @@ public class MainActivity extends Activity {
                 DesignSystem.dp(this, 6), DesignSystem.dp(this, 6));
 
         nav.addView(createNavItem("home", "Inicio", currentTab == Tab.HOME, v -> switchTab(Tab.HOME)));
-        nav.addView(createNavItem("files", "Biblioteca", currentTab == Tab.FILES, v -> switchTab(Tab.FILES)));
+        nav.addView(createNavItem("folder", "Biblioteca", currentTab == Tab.FILES, v -> switchTab(Tab.FILES)));
         nav.addView(createNavItem("tools", "Herramientas", currentTab == Tab.TOOLS, v -> switchTab(Tab.TOOLS)));
         nav.addView(createNavItem("settings", "Ajustes", currentTab == Tab.SETTINGS, v -> switchTab(Tab.SETTINGS)));
 
@@ -336,7 +336,7 @@ public class MainActivity extends Activity {
         }
         iconPill.setPadding(DesignSystem.dp(this, 14), DesignSystem.dp(this, 4),
                 DesignSystem.dp(this, 14), DesignSystem.dp(this, 4));
-        iconPill.addView(Icons.view(this, iconName, 21, color));
+        iconPill.addView(Icons.view(this, iconName, Icons.SIZE_NAV, color));
         item.addView(iconPill);
 
         TextView labelView = DesignSystem.text(this, label, 11, color, selected);
@@ -445,7 +445,7 @@ public class MainActivity extends Activity {
 
         LinearLayout actionsRow1 = new LinearLayout(this);
         actionsRow1.setOrientation(LinearLayout.HORIZONTAL);
-        actionsRow1.addView(DesignSystem.createQuickActionCard(this, "files", "Abrir",
+        actionsRow1.addView(DesignSystem.createQuickActionCard(this, "folder", "Abrir",
                 DesignSystem.COLOR_PRIMARY, v -> openPdfPicker()));
         actionsRow1.addView(DesignSystem.createQuickActionCard(this, "scan", "Escanear",
                 DesignSystem.COLOR_ACCENT_GREEN, v -> openCameraCapture()));
@@ -1005,7 +1005,7 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, DesignSystem.dp(this, 0.7f))));
 
         LinearLayout navRow = buildDockRow();
-        prevBtn = dockAction("back", "Anterior", v -> {
+        prevBtn = dockAction("prev", "Anterior", v -> {
             if (rendererCore.getActivePageIndex() > 0) renderCurrentPage(rendererCore.getActivePageIndex() - 1);
         });
         addDockView(navRow, prevBtn, 1f);
@@ -1018,7 +1018,7 @@ public class MainActivity extends Activity {
                 DesignSystem.dp(this, DesignSystem.SP_S), DesignSystem.dp(this, 6));
         addDockView(navRow, pageIndicatorView, 1.6f);
 
-        nextBtn = dockAction("chevron", "Siguiente", v -> {
+        nextBtn = dockAction("next", "Siguiente", v -> {
             if (rendererCore.getActivePageIndex() < rendererCore.getPageCount() - 1)
                 renderCurrentPage(rendererCore.getActivePageIndex() + 1);
         });
@@ -1063,7 +1063,7 @@ public class MainActivity extends Activity {
         item.setMinimumHeight(DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
         item.setContentDescription(label);
 
-        item.addView(Icons.view(this, icon, 20, DesignSystem.TEXT_SECONDARY));
+        item.addView(Icons.view(this, icon, Icons.SIZE_MD, DesignSystem.TEXT_SECONDARY));
         TextView l = DesignSystem.text(this, label, 11, DesignSystem.TEXT_TERTIARY, false);
         l.setSingleLine(true);
         l.setPadding(0, DesignSystem.dp(this, 3), 0, 0);
@@ -1090,7 +1090,7 @@ public class MainActivity extends Activity {
             setContentDescription(DesignSystem.iconLabel(icon));
             this.icon = icon;
             this.tint = tint;
-            addView(Icons.view(MainActivity.this, icon, 22, tint));
+            addView(Icons.view(MainActivity.this, icon, Icons.SIZE_MD, tint));
             setOnClickListener(onClick);
             DesignSystem.addPressScale(this);
         }
@@ -1100,7 +1100,7 @@ public class MainActivity extends Activity {
             this.tint = newTint;
             setContentDescription(DesignSystem.iconLabel(newIcon));
             removeAllViews();
-            addView(Icons.view(MainActivity.this, icon, 22, tint));
+            addView(Icons.view(MainActivity.this, icon, Icons.SIZE_MD, tint));
         }
     }
 
@@ -1674,10 +1674,10 @@ public class MainActivity extends Activity {
         lp.setMargins(0, 0, 0, DesignSystem.dp(this, DesignSystem.SP_S));
         row.setLayoutParams(lp);
 
-        View check = Icons.view(this, selected ? "select" : "unselect", 20,
+        View check = Icons.view(this, selected ? "select" : "unselect", Icons.SIZE_MD,
                 selected ? DesignSystem.COLOR_PRIMARY : DesignSystem.TEXT_TERTIARY);
         LinearLayout.LayoutParams checkLp = new LinearLayout.LayoutParams(
-                DesignSystem.dp(this, 20), DesignSystem.dp(this, 20));
+                DesignSystem.dp(this, Icons.SIZE_MD), DesignSystem.dp(this, Icons.SIZE_MD));
         checkLp.setMargins(0, 0, DesignSystem.dp(this, DesignSystem.SP_M), 0);
         row.addView(check, checkLp);
 
@@ -1735,7 +1735,7 @@ public class MainActivity extends Activity {
     private void moveMergeItem(String id, int delta) {
         int from = mergeOrder.indexOf(id);
         if (from < 0) {
-            Toast.makeText(this, "Primero marca este documento con ☑", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Primero selecciona este documento en la lista", Toast.LENGTH_SHORT).show();
             return;
         }
         int to = from + delta;
@@ -1819,13 +1819,32 @@ public class MainActivity extends Activity {
         toolBar.setOrientation(LinearLayout.HORIZONTAL);
         toolBar.setGravity(Gravity.CENTER_VERTICAL);
 
-        toolBar.addView(toolChip("pen", "Bolígrafo",
-                v -> canvasView.init(Color.parseColor("#1E40AF"), 6f, false)));
-        toolBar.addView(toolChip("edit", "Resaltador",
-                v -> canvasView.init(Color.parseColor("#EAB308"), 8f, true)));
-        toolBar.addView(toolChip("select", "Firma",
-                v -> canvasView.init(Color.BLACK, 5f, false)));
-        toolBar.addView(toolChip("trash", "Limpiar", v -> canvasView.clear()));
+        final ToolChip penChip = toolChip("pen", "Bolígrafo", true);
+        final ToolChip markerChip = toolChip("highlighter", "Resaltador", true);
+        final ToolChip signatureChip = toolChip("signature", "Firma", true);
+        final ToolChip clearChip = toolChip("trash", "Limpiar", false);
+        final ToolChip[] modeChips = {penChip, markerChip, signatureChip};
+
+        penChip.setOnClickListener(v -> {
+            selectTool(modeChips, penChip);
+            canvasView.init(Color.parseColor("#1E40AF"), 6f, false);
+        });
+        markerChip.setOnClickListener(v -> {
+            selectTool(modeChips, markerChip);
+            canvasView.init(Color.parseColor("#EAB308"), 8f, true);
+        });
+        signatureChip.setOnClickListener(v -> {
+            selectTool(modeChips, signatureChip);
+            canvasView.init(Color.BLACK, 5f, false);
+        });
+        clearChip.setOnClickListener(v -> canvasView.clear());
+        selectTool(modeChips, penChip);
+        canvasView.init(Color.parseColor("#1E40AF"), 6f, false);
+
+        toolBar.addView(penChip);
+        toolBar.addView(markerChip);
+        toolBar.addView(signatureChip);
+        toolBar.addView(clearChip);
 
         modalLayout.addView(toolBar);
         LinearLayout.LayoutParams canvasLp = new LinearLayout.LayoutParams(
@@ -1856,32 +1875,62 @@ public class MainActivity extends Activity {
         }, "Cancelar").show();
     }
 
-    /** Compact icon + text control used inside sheets. */
-    private View toolChip(String icon, String label, View.OnClickListener onClick) {
-        LinearLayout chip = new LinearLayout(this);
-        chip.setOrientation(LinearLayout.HORIZONTAL);
-        chip.setGravity(Gravity.CENTER);
-        chip.setBackground(DesignSystem.createClickableCardDrawable(this,
-                DesignSystem.SURFACE_ELEVATED, DesignSystem.SURFACE_CARD_PRESSED, DesignSystem.RADIUS_SM));
-        chip.setPadding(DesignSystem.dp(this, DesignSystem.SP_S), DesignSystem.dp(this, 6),
-                DesignSystem.dp(this, DesignSystem.SP_S), DesignSystem.dp(this, 6));
-        chip.setClickable(true);
-        chip.setFocusable(true);
-        chip.setContentDescription(label);
-        chip.setMinimumHeight(DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
+    /** Compact icon + text control with a distinct selected state. */
+    private final class ToolChip extends LinearLayout {
+        private final String iconName;
+        private final View icon;
+        private final TextView label;
+        private final boolean selectable;
+        private boolean active;
 
-        chip.addView(Icons.view(this, icon, 15, DesignSystem.TEXT_SECONDARY));
-        TextView t = DesignSystem.text(this, label, 11, DesignSystem.TEXT_PRIMARY, false);
-        t.setPadding(DesignSystem.dp(this, 5), 0, 0, 0);
-        chip.addView(t);
+        ToolChip(String iconName, String text, boolean selectable) {
+            super(MainActivity.this);
+            this.iconName = iconName;
+            this.selectable = selectable;
+            setOrientation(LinearLayout.HORIZONTAL);
+            setGravity(Gravity.CENTER);
+            setClickable(true);
+            setFocusable(true);
+            setContentDescription(text);
+            setMinimumHeight(DesignSystem.dp(getContext(), DesignSystem.TOUCH_COMFORT));
+            setPadding(DesignSystem.dp(getContext(), DesignSystem.SP_S), DesignSystem.dp(getContext(), 6),
+                    DesignSystem.dp(getContext(), DesignSystem.SP_S), DesignSystem.dp(getContext(), 6));
 
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(0, 0, DesignSystem.dp(this, 6), 0);
-        chip.setLayoutParams(lp);
-        chip.setOnClickListener(onClick);
-        DesignSystem.addPressScale(chip);
-        return chip;
+            icon = Icons.view(getContext(), iconName, Icons.SIZE_SM, DesignSystem.TEXT_SECONDARY);
+            addView(icon);
+            label = DesignSystem.text(getContext(), text, 11, DesignSystem.TEXT_PRIMARY, false);
+            label.setPadding(DesignSystem.dp(getContext(), 5), 0, 0, 0);
+            addView(label);
+
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(0, 0, DesignSystem.dp(getContext(), 6), 0);
+            setLayoutParams(lp);
+            setActive(false);
+            DesignSystem.addPressScale(this);
+        }
+
+        void setActive(boolean value) {
+            active = value;
+            setBackground(DesignSystem.createCardDrawable(getContext(),
+                    active ? DesignSystem.COLOR_PRIMARY_TINT : DesignSystem.SURFACE_ELEVATED,
+                    active ? DesignSystem.withAlpha(DesignSystem.COLOR_PRIMARY, 0.55f)
+                            : DesignSystem.BORDER_SUBTLE,
+                    DesignSystem.RADIUS_SM));
+            Icons.setColor(icon, active ? DesignSystem.COLOR_PRIMARY : DesignSystem.TEXT_SECONDARY);
+            label.setTextColor(active ? DesignSystem.COLOR_PRIMARY : DesignSystem.TEXT_PRIMARY);
+            label.setTypeface(null, active ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+            setContentDescription(selectable && active ? label.getText() + ", seleccionada" : label.getText());
+        }
+    }
+
+    private ToolChip toolChip(String icon, String label, boolean selectable) {
+        return new ToolChip(icon, label, selectable);
+    }
+
+    /** Exactly one mode chip stays highlighted; action chips are never selected. */
+    private void selectTool(ToolChip[] chips, ToolChip chosen) {
+        for (ToolChip chip : chips) chip.setActive(chip == chosen);
     }
 
     private void shareCurrentDocument() {

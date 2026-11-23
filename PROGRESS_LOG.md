@@ -36,3 +36,14 @@
 - Regresiones: ninguna observada en las pantallas recorridas; los 3 documentos siguen listados con sus tamaños.
 - Pendiente de evidencia: empty state de Unir (hay documentos, no se borraron), pantalla de error de arranque (no se provocó) y animación de escala (read_screen no la muestra): implementados y compilados, no marcados como vistos en pantalla.
 - Siguiente tarea: T-08, completar el recorrido funcional de compresión, unión real y escaneo sobre v3.6.
+
+## 2026-11-23 — Lote: sistema iconográfico profesional v3.6 (v15)
+- Requerimiento del usuario: renovar TODOS los iconos usando recursos profesionales buscados y descargados de Internet, no dibujados desde cero ni limitados a los existentes.
+- Investigación: se compararon Lucide (ISC), Tabler (MIT), Phosphor (MIT), Material Symbols/Material Icons (Apache 2.0), Compose Icons (no aplica), Iconify (agregador), Iconfinder/Icons8/Flaticon (licencias mixtas/de pago) y herramientas IA (Recraft) / editores (Inkscape, Figma, Illustrator). Se eligió **Lucide** por licencia ISC comercial, grid 24×24, trazo 2 uniforme y cobertura completa.
+- Descarga real: 51 SVG originales desde `raw.githubusercontent.com/lucide-icons/lucide/main/icons/`, guardados en `docs/icon-system/lucide-svg/`. Licencias ISC/MIT guardadas en `docs/icon-system/`.
+- Conversión: `tools/build_vectordrawables.py` traduce los SVG a VectorDrawable XML en `res/drawable/ic_*.xml` (52 recursos + launcher). Nombres upstream corregidos contra el árbol Git real (`triangle-exclamation-point`, `trash`, `grid-2x2`). `ic_starfill.xml` es la variante rellena del mismo `star` para el estado seleccionado.
+- Integración: `Icons.java` reescrito como fachada de recursos (ImageView + tint `SRC_ATOP`, caché de `getIdentifier`, fallback a `ic_doc`). Se eliminaron el renderer Canvas, el parser de paths y la caché de `Path`. Aliases semánticos (`files`, `edit`, `prev`, `next`, `zoom_in`, `zoom_out`, `warning`, `link`) apuntan a un único recurso. `ToolChip` tiene estado activo con color primario, fondo, peso de texto y `contentDescription` «, seleccionada».
+- Limpieza: eliminado `createIconBadge` (emoji, sin usos); reemplazado `☑` del Toast por «Primero selecciona este documento en la lista»; launcher genérico `@android:drawable/sym_def_app_icon` sustituido por `ic_launcher` adaptativo propio.
+- Compilación: misma orden exacta, `HOME=/root`, sin cambios en la firma (`c8075235…`). versionCode 15, versionName 3.6, SHA-256 `7b7d3de754b3e05334317de2d41f981823f81bfaa61dbd5a6ee854e76efd7ef2`, 53 vectores dentro del APK.
+- Instalación: pendiente de que el usuario devuelva el teléfono (las herramientas informaron PAUSED mientras lo usaba). La verificación final con `read_screen` queda registrada en T-12.
+- Informe completo: `docs/ICON_SYSTEM.md`.

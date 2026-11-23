@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Filled companion of ic_star.xml (Lucide, ISC). Selected-state variant. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path
+        android:pathData="M11.99 2.18a.5.5 0 0 1 .95 0l2.72 5.51 6.08.88a.5.5 0 0 1 .28.85l-4.4 4.29 1.04 6.05a.5.5 0 0 1-.73.53L12 17.06l-5.43 2.85a.5.5 0 0 1-.73-.53l1.04-6.05-4.4-4.29a.5.5 0 0 1 .28-.85l6.08-.88Z"
+        android:fillColor="#FFFFFF" />
+</vector>

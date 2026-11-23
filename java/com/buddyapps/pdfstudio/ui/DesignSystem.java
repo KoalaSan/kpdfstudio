@@ -242,7 +242,9 @@ public class DesignSystem {
         if (iconName == null) return "Acción";
         switch (iconName) {
             case "back": return "Volver";
+            case "prev": return "Anterior";
             case "chevron": return "Siguiente";
+            case "next": return "Siguiente";
             case "search": return "Buscar";
             case "hash": return "Ir a página";
             case "share": return "Compartir";
@@ -256,6 +258,8 @@ public class DesignSystem {
             case "zoomin": return "Acercar";
             case "rotate": return "Girar página";
             case "pen": return "Anotar";
+            case "highlighter": return "Resaltador";
+            case "signature": return "Firma";
             case "scissors": return "Extraer páginas";
             case "trash": return "Eliminar";
             case "close": return "Cerrar";
@@ -343,21 +347,6 @@ public class DesignSystem {
         return box;
     }
 
-    /** Kept for callers that still pass an emoji. */
-    public static TextView createIconBadge(Context context, String icon, int accentColor, int iconSizeSp) {
-        TextView badge = new TextView(context);
-        badge.setText(icon);
-        badge.setTextSize(iconSizeSp);
-        badge.setGravity(Gravity.CENTER);
-        badge.setBackground(createCardDrawable(context,
-                withAlpha(accentColor, 0.14f),
-                withAlpha(accentColor, 0.28f),
-                RADIUS_MD));
-        int pad = dp(context, 6);
-        badge.setPadding(pad, pad, pad, pad);
-        return badge;
-    }
-
     /** 48 dp icon button with a transparent pressed state and a TalkBack label. */
     public static View iconButton(Context context, String iconName, int color, View.OnClickListener onClick) {
         return iconButton(context, iconName, color, iconLabel(iconName), onClick);
@@ -381,7 +370,7 @@ public class DesignSystem {
         bg.addState(new int[]{}, normal);
         holder.setBackground(bg);
 
-        holder.addView(Icons.view(context, iconName, 22, color));
+        holder.addView(Icons.view(context, iconName, Icons.SIZE_MD, color));
         if (onClick != null) holder.setOnClickListener(onClick);
         addPressScale(holder);
         return holder;
