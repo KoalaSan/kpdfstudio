@@ -27,6 +27,8 @@ public final class Icons {
         v.setLayoutParams(new android.view.ViewGroup.LayoutParams(size, size));
         v.setMinimumWidth(size);
         v.setMinimumHeight(size);
+        // Icons are decorative by default; actionable parents carry the label.
+        v.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         return v;
     }
 

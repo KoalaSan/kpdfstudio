@@ -8,6 +8,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.StateListDrawable;
+import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -140,7 +141,7 @@ public class DesignSystem {
     public static final int TEXT_CAPTION = 13;
     public static final int TEXT_MICRO = 12;
 
-    public static final int TOUCH_MIN = 44;
+    public static final int TOUCH_MIN = 48;
     public static final int TOUCH_COMFORT = 48;
 
     public static int dp(Context context, float value) {
@@ -236,6 +237,65 @@ public class DesignSystem {
         return t;
     }
 
+    /** Short action-oriented label for a drawn icon, used by TalkBack. */
+    public static String iconLabel(String iconName) {
+        if (iconName == null) return "Acción";
+        switch (iconName) {
+            case "back": return "Volver";
+            case "chevron": return "Siguiente";
+            case "search": return "Buscar";
+            case "hash": return "Ir a página";
+            case "share": return "Compartir";
+            case "star": return "Añadir a favoritos";
+            case "starfill": return "Quitar de favoritos";
+            case "moon": return "Activar modo noche";
+            case "sun": return "Desactivar modo noche";
+            case "up": return "Subir en el orden";
+            case "down": return "Bajar en el orden";
+            case "zoomout": return "Alejar";
+            case "zoomin": return "Acercar";
+            case "rotate": return "Girar página";
+            case "pen": return "Anotar";
+            case "scissors": return "Extraer páginas";
+            case "trash": return "Eliminar";
+            case "close": return "Cerrar";
+            case "check": return "Confirmar";
+            case "alert": return "Aviso";
+            default: return iconName;
+        }
+    }
+
+    /**
+     * Light press feedback for cards and icon buttons. The listener does not consume
+     * the touch, so the existing click handlers and pressed drawables keep working.
+     */
+    public static void addPressScale(View view) {
+        float scale = 1f;
+        try {
+            scale = Settings.Global.getFloat(view.getContext().getContentResolver(),
+                    Settings.Global.ANIMATOR_DURATION_SCALE, 1f);
+        } catch (Exception ignored) {
+            // Keep the animation when the setting cannot be read.
+        }
+        if (scale <= 0.01f) return;
+        view.setOnTouchListener((v, event) -> {
+            switch (event.getAction()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                    v.animate().cancel();
+                    v.animate().scaleX(0.97f).scaleY(0.97f).setDuration(90).start();
+                    break;
+                case android.view.MotionEvent.ACTION_UP:
+                case android.view.MotionEvent.ACTION_CANCEL:
+                    v.animate().cancel();
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
+                    break;
+                default:
+                    break;
+            }
+            return false;
+        });
+    }
+
     public static TextView sectionTitle(Context context, String value) {
         TextView t = text(context, value, TEXT_SUBTITLE, TEXT_PRIMARY, true);
         t.setLetterSpacing(-0.01f);
@@ -298,14 +358,21 @@ public class DesignSystem {
         return badge;
     }
 
-    /** 44 dp round icon button with a transparent pressed state. */
+    /** 48 dp icon button with a transparent pressed state and a TalkBack label. */
     public static View iconButton(Context context, String iconName, int color, View.OnClickListener onClick) {
+        return iconButton(context, iconName, color, iconLabel(iconName), onClick);
+    }
+
+    /** 48 dp icon button with an explicit TalkBack label. */
+    public static View iconButton(Context context, String iconName, int color, String description,
+                                  View.OnClickListener onClick) {
         FrameLike holder = new FrameLike(context);
         holder.setGravity(Gravity.CENTER);
         holder.setMinimumWidth(dp(context, TOUCH_MIN));
         holder.setMinimumHeight(dp(context, TOUCH_MIN));
         holder.setClickable(true);
         holder.setFocusable(true);
+        holder.setContentDescription(description);
 
         StateListDrawable bg = new StateListDrawable();
         GradientDrawable pressed = createCardDrawable(context, withAlpha(color, 0.14f), 0, RADIUS_MD);
@@ -316,6 +383,7 @@ public class DesignSystem {
 
         holder.addView(Icons.view(context, iconName, 22, color));
         if (onClick != null) holder.setOnClickListener(onClick);
+        addPressScale(holder);
         return holder;
     }
 
@@ -472,6 +540,7 @@ public class DesignSystem {
         card.addView(label);
 
         card.setOnClickListener(onClick);
+        addPressScale(card);
         return card;
     }
 
@@ -516,6 +585,7 @@ public class DesignSystem {
         row.addView(chevron);
 
         row.setOnClickListener(onClick);
+        addPressScale(row);
         return row;
     }
 
@@ -527,7 +597,7 @@ public class DesignSystem {
                 selected ? withAlpha(COLOR_PRIMARY, 0.45f) : BORDER_SUBTLE,
                 RADIUS_SM * 2));
         chip.setPadding(dp(context, SP_L), dp(context, SP_S), dp(context, SP_L), dp(context, SP_S));
-        chip.setMinHeight(dp(context, 44));
+        chip.setMinHeight(dp(context, TOUCH_MIN));
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -536,6 +606,7 @@ public class DesignSystem {
         chip.setClickable(true);
         chip.setFocusable(true);
         if (onClick != null) chip.setOnClickListener(onClick);
+        addPressScale(chip);
         return chip;
     }
 
@@ -672,6 +743,8 @@ public class DesignSystem {
 
         TextView v = text(context, value, TEXT_TITLE, accentColor, true);
         v.setIncludeFontPadding(false);
+        v.setMaxLines(1);
+        v.setEllipsize(android.text.TextUtils.TruncateAt.END);
         block.addView(v);
 
         TextView l = text(context, label, TEXT_MICRO, TEXT_SECONDARY, false);

@@ -37,5 +37,25 @@ Fecha: 2026-11-22. Alcance: Java/XML sin AndroidX; se audita el código de todas
 ## Ya corregido en el lote v3.5
 D-01, D-02, D-03, D-07, D-08, parte de D-06 (tarjetas y accesos rápidos).
 
-## Pendiente del lote actual
-D-04, D-05, D-06 (iconos), D-09, D-10, D-11, D-12, D-13, D-14.
+## Lote v3.6 (2026-11-23) — hallazgos corregidos
+- StatBlock del dashboard: `docLabel(n)` devolvía "n documentos" y se partía en tres columnas; ahora se pasa `String.valueOf(n)` y el valor se limita a una línea.
+- D-04: dock del visor con targets de 48 dp y etiquetas de 11 sp.
+- D-05: flechas de orden y chips de anotación a 48 dp; `TOUCH_MIN` global a 48 dp.
+- D-06: `contentDescription` en iconButton, IconToggle, dock, nav, filas de unión y chips; los iconos decorativos se ocultan a TalkBack.
+- D-09: buscador con estado inicial, indicador de carga, estados sin coincidencias/error y colores semánticos.
+- D-10: estado vacío de Unir con `DesignSystem.emptyState` y CTA para importar.
+- D-11: títulos de visor, Unir y creador unificados a 22 sp con elipsis.
+- D-12: pantalla de error de arranque con tema Graphite, mensaje claro y acciones Reintentar/Cerrar.
+- D-13: espaciado regular entre etiquetas y campos en el creador.
+- D-14: animación de escala ligera al pulsar tarjetas, botones de icono, chips y filas.
+
+### Evidencia en dispositivo (`read_screen`, v3.6, versionCode 12)
+- Inicio: `TextView "3"` + `TextView "Documentos"` en posiciones separadas (377/439 px), sin "3 documentos" partido.
+- Biblioteca: `TextView "3"` + `TextView "En la biblioteca"` (349/411 px).
+- Visor: descripciones "Volver", "Añadir a favoritos", "Activar modo noche", "Buscar", "Ir a página", "Compartir", "Anterior", "Siguiente", "Zoom -/+", "Girar", "Anotar", "Extraer", "Borrar".
+- Buscar: estado inicial "Busca una palabra o frase del documento."; después de buscar "ejemplo", "Sin coincidencias (o el PDF no tiene capa de texto)" con flechas desactivadas.
+- Unir: filas con descripción "…, no seleccionado, 1 página" y flechas "Subir en el orden"/"Bajar en el orden".
+- Creador: etiquetas TÍTULO/CONTENIDO y campos alineados al mismo eje horizontal con separaciones regulares.
+- Anotar: chips "Bolígrafo", "Resaltador", "Firma", "Limpiar" con descripción y sin diálogo de error.
+
+Sin evidencia visual: el estado vacío de Unir (hay 3 documentos, no se borraron datos), la pantalla de error de arranque (no se provocó a propósito) y la animación de escala (read_screen no muestra animaciones). Quedan implementados en código y verificados por compilación.

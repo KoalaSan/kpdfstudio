@@ -168,3 +168,13 @@ Mejora de diseño sin añadir funcionalidades ni eliminar ninguna existente; sol
 **Verificación en dispositivo real:** Inicio, Archivos, Herramientas y Ajustes renderizan con el nuevo estilo; se abrió un documento (visor con `Pág 1 / 3`, dock de dos filas) y se abrió/cerró el diálogo de búsqueda sin errores. Sin regresiones observadas; los documentos previos siguen listados.
 
 **Identidad de la nueva APK:** `com.buddyapps.pdfstudio`, `versionCode=5`, `versionName=3.2`, SHA-256 `6f762c7995401bc6f9fb15dc8f05eb033bcb9bfdb4134132ff443dac0803f8f8`, cert `26034f2c…1773e9` (misma clave, actualizable).
+
+---
+
+## 8. PULIDO DE ACCESIBILIDAD v3.6 (2026-11-23)
+
+Versión `com.buddyapps.pdfstudio34`, `versionCode=12`, `versionName=3.6`, SHA-256 `0944073ed772217cc7fa70a0db70ba8d08e4217d9e85df0481cc4625af32321e`, firma `c8075235…` (idéntica a la v3.5 instalada; el usuario confirmó la actualización).
+
+Se corrigió el valor de las statBlocks del dashboard (`String.valueOf(n)` en lugar de "n documentos", que se partía en tres columnas) y los hallazgos D-04 a D-14 de `DESIGN_AUDIT.md`: targets táctiles de 48 dp, descripciones para TalkBack, estados de búsqueda con carga/éxito/vacío/error, empty state en Unir, títulos a 22 sp, pantalla de error de arranque tematizada, espaciado del creador y microinteracción de pulsación.
+
+Verificación con `read_screen`: contador separado de su etiqueta en Inicio y Biblioteca; iconos del visor, Unir y Anotar con descripción; estados del buscador; creador alineado; sin errores al recorrer las pantallas. Detalle y evidencia en `PROGRESS_LOG.md` y `DESIGN_AUDIT.md`.

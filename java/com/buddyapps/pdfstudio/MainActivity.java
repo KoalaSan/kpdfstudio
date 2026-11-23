@@ -31,6 +31,7 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -140,16 +141,54 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** Temporary diagnostics: shows the startup failure on screen instead of closing. */
+    /** Themed startup error: friendly message, details and a way to recover. */
     private void showStartupCrash(Throwable t) {
-        ScrollView scroll = new ScrollView(this);
-        TextView text = new TextView(this);
-        text.setTextSize(11);
-        text.setTextColor(Color.parseColor("#FF6B6B"));
-        text.setBackgroundColor(Color.parseColor("#111111"));
-        text.setPadding(24, 48, 24, 48);
-        text.setText(android.util.Log.getStackTraceString(t));
-        scroll.addView(text);
+        DesignSystem.applyTheme(this, true);
+        ScrollView scroll = DesignSystem.screenScroll(this);
+        LinearLayout content = DesignSystem.screenColumn(this);
+        content.setBackgroundColor(DesignSystem.BG_APP);
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(DesignSystem.createElevatedCardDrawable(this,
+                DesignSystem.SURFACE_CARD, DesignSystem.RADIUS_LG));
+        card.setPadding(DesignSystem.dp(this, DesignSystem.SP_XL), DesignSystem.dp(this, DesignSystem.SP_XL),
+                DesignSystem.dp(this, DesignSystem.SP_XL), DesignSystem.dp(this, DesignSystem.SP_XL));
+
+        card.addView(DesignSystem.iconBadge(this, "alert", DesignSystem.COLOR_ACCENT_ROSE, 48, 24),
+                new LinearLayout.LayoutParams(DesignSystem.dp(this, 48), DesignSystem.dp(this, 48)));
+
+        TextView title = DesignSystem.text(this, "No se pudo iniciar PDF Studio",
+                DesignSystem.TEXT_TITLE, DesignSystem.TEXT_PRIMARY, true);
+        title.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_M), 0, 0);
+        card.addView(title);
+
+        TextView body = DesignSystem.bodyText(this,
+                "La app encontró un problema al abrirse. Tus documentos siguen guardados; inténtalo de nuevo.");
+        body.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_S), 0, 0);
+        card.addView(body);
+
+        TextView details = DesignSystem.text(this, android.util.Log.getStackTraceString(t),
+                DesignSystem.TEXT_CAPTION, DesignSystem.TEXT_SECONDARY, false);
+        details.setBackground(DesignSystem.createCardDrawable(this,
+                DesignSystem.SURFACE_CARD_PRESSED, DesignSystem.BORDER_SUBTLE, DesignSystem.RADIUS_SM));
+        details.setPadding(DesignSystem.dp(this, DesignSystem.SP_M), DesignSystem.dp(this, DesignSystem.SP_M),
+                DesignSystem.dp(this, DesignSystem.SP_M), DesignSystem.dp(this, DesignSystem.SP_M));
+        details.setTextIsSelectable(true);
+        LinearLayout.LayoutParams detailsLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        detailsLp.setMargins(0, DesignSystem.dp(this, DesignSystem.SP_L), 0, 0);
+        card.addView(details, detailsLp);
+
+        Button retry = DesignSystem.createPrimaryButton(this, "Reintentar", v -> recreate());
+        LinearLayout.LayoutParams retryLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        retryLp.setMargins(0, DesignSystem.dp(this, DesignSystem.SP_L), 0, 0);
+        card.addView(retry, retryLp);
+        card.addView(DesignSystem.createGhostButton(this, "Cerrar", v -> finish()));
+
+        content.addView(card);
+        scroll.addView(content);
         setContentView(scroll);
     }
 
@@ -279,6 +318,7 @@ public class MainActivity extends Activity {
         item.setGravity(Gravity.CENTER);
         item.setClickable(true);
         item.setFocusable(true);
+        item.setContentDescription(selected ? label + ", seleccionada" : label);
         item.setMinimumHeight(DesignSystem.dp(this, 52));
         item.setPadding(0, DesignSystem.dp(this, 4), 0, DesignSystem.dp(this, 2));
 
@@ -304,6 +344,7 @@ public class MainActivity extends Activity {
         item.addView(labelView);
 
         item.setOnClickListener(onClick);
+        DesignSystem.addPressScale(item);
         return item;
     }
 
@@ -361,7 +402,7 @@ public class MainActivity extends Activity {
         stats.setOrientation(LinearLayout.HORIZONTAL);
         stats.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_L), 0, 0);
 
-        View docsStat = DesignSystem.statBlock(this, docLabel(allDocs.size()), "Documentos",
+        View docsStat = DesignSystem.statBlock(this, String.valueOf(allDocs.size()), "Documentos",
                 DesignSystem.COLOR_PRIMARY);
         LinearLayout.LayoutParams docsLp = (LinearLayout.LayoutParams) docsStat.getLayoutParams();
         docsLp.setMargins(0, 0, DesignSystem.dp(this, DesignSystem.SP_M), 0);
@@ -550,6 +591,7 @@ public class MainActivity extends Activity {
                 Toast.makeText(this, "El archivo original ya no está en el almacenamiento", Toast.LENGTH_SHORT).show();
             }
         });
+        DesignSystem.addPressScale(card);
 
         return card;
     }
@@ -582,7 +624,7 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         summaryLp.setMargins(0, DesignSystem.dp(this, DesignSystem.SP_L), 0, 0);
         summary.setLayoutParams(summaryLp);
-        summary.addView(DesignSystem.statBlock(this, docLabel(docs.size()), "En la biblioteca",
+        summary.addView(DesignSystem.statBlock(this, String.valueOf(docs.size()), "En la biblioteca",
                 DesignSystem.COLOR_PRIMARY));
         summary.addView(DesignSystem.statBlock(this, totalSize, "Espacio usado",
                 DesignSystem.COLOR_ACCENT_GREEN));
@@ -793,7 +835,7 @@ public class MainActivity extends Activity {
         aboutTitles.setLayoutParams(aboutLp);
         aboutTitles.addView(DesignSystem.text(this, "PDF Studio", DesignSystem.TEXT_SUBTITLE,
                 DesignSystem.TEXT_PRIMARY, true));
-        aboutTitles.addView(DesignSystem.text(this, "v3.5 · 100% offline", DesignSystem.TEXT_CAPTION,
+        aboutTitles.addView(DesignSystem.text(this, "v3.6 · 100% offline", DesignSystem.TEXT_CAPTION,
                 DesignSystem.TEXT_SECONDARY, false));
         aboutHeader.addView(aboutTitles);
         about.addView(aboutHeader);
@@ -885,7 +927,7 @@ public class MainActivity extends Activity {
         header.addView(DesignSystem.iconButton(this, "back", DesignSystem.TEXT_PRIMARY,
                 v -> showMainScreen()));
 
-        viewerTitleView = DesignSystem.text(this, title, 16, DesignSystem.TEXT_PRIMARY, true);
+        viewerTitleView = DesignSystem.text(this, title, DesignSystem.TEXT_TITLE, DesignSystem.TEXT_PRIMARY, true);
         viewerTitleView.setSingleLine(true);
         viewerTitleView.setEllipsize(android.text.TextUtils.TruncateAt.END);
         viewerTitleView.setPadding(DesignSystem.dp(this, 8), 0, DesignSystem.dp(this, 8), 0);
@@ -1017,16 +1059,18 @@ public class MainActivity extends Activity {
         item.setFocusable(true);
         item.setPadding(DesignSystem.dp(this, 2), DesignSystem.dp(this, 6),
                 DesignSystem.dp(this, 2), DesignSystem.dp(this, 4));
-        item.setMinimumWidth(DesignSystem.dp(this, DesignSystem.TOUCH_MIN));
-        item.setMinimumHeight(DesignSystem.dp(this, 48));
+        item.setMinimumWidth(DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
+        item.setMinimumHeight(DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
+        item.setContentDescription(label);
 
         item.addView(Icons.view(this, icon, 20, DesignSystem.TEXT_SECONDARY));
-        TextView l = DesignSystem.text(this, label, 9, DesignSystem.TEXT_TERTIARY, false);
+        TextView l = DesignSystem.text(this, label, 11, DesignSystem.TEXT_TERTIARY, false);
         l.setSingleLine(true);
         l.setPadding(0, DesignSystem.dp(this, 3), 0, 0);
         item.addView(l);
 
         item.setOnClickListener(onClick);
+        DesignSystem.addPressScale(item);
         return item;
     }
 
@@ -1039,19 +1083,22 @@ public class MainActivity extends Activity {
             super(MainActivity.this);
             setOrientation(HORIZONTAL);
             setGravity(Gravity.CENTER);
-            setMinimumWidth(DesignSystem.dp(MainActivity.this, DesignSystem.TOUCH_MIN));
-            setMinimumHeight(DesignSystem.dp(MainActivity.this, DesignSystem.TOUCH_MIN));
+            setMinimumWidth(DesignSystem.dp(MainActivity.this, DesignSystem.TOUCH_COMFORT));
+            setMinimumHeight(DesignSystem.dp(MainActivity.this, DesignSystem.TOUCH_COMFORT));
             setClickable(true);
             setFocusable(true);
+            setContentDescription(DesignSystem.iconLabel(icon));
             this.icon = icon;
             this.tint = tint;
             addView(Icons.view(MainActivity.this, icon, 22, tint));
             setOnClickListener(onClick);
+            DesignSystem.addPressScale(this);
         }
 
         void setIcon(String newIcon, int newTint) {
             this.icon = newIcon;
             this.tint = newTint;
+            setContentDescription(DesignSystem.iconLabel(newIcon));
             removeAllViews();
             addView(Icons.view(MainActivity.this, icon, 22, tint));
         }
@@ -1076,8 +1123,8 @@ public class MainActivity extends Activity {
     private void addDockView(LinearLayout row, View view, float weight) {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, weight);
         lp.setMargins(DesignSystem.dp(this, 2), 0, DesignSystem.dp(this, 2), 0);
-        view.setMinimumWidth(DesignSystem.dp(this, 44));
-        view.setMinimumHeight(DesignSystem.dp(this, 38));
+        view.setMinimumWidth(DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
+        view.setMinimumHeight(DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
         row.addView(view, lp);
     }
 
@@ -1275,6 +1322,14 @@ public class MainActivity extends Activity {
         final EditText queryEdit = DesignSystem.createField(this, "Texto a buscar en el PDF", false);
         layout.addView(queryEdit);
 
+        final ProgressBar progress = new ProgressBar(this, null, android.R.attr.progressBarStyleSmall);
+        progress.setIndeterminate(true);
+        progress.setVisibility(View.GONE);
+        LinearLayout.LayoutParams progressLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        progressLp.setMargins(0, DesignSystem.dp(this, DesignSystem.SP_S), 0, 0);
+        layout.addView(progress, progressLp);
+
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
         buttons.setGravity(Gravity.CENTER_VERTICAL);
@@ -1283,23 +1338,25 @@ public class MainActivity extends Activity {
         buttonsLp.setMargins(0, DesignSystem.dp(this, DesignSystem.SP_M), 0, 0);
         layout.addView(buttons, buttonsLp);
 
-        Button searchBtn = DesignSystem.createPrimaryButton(this, "Buscar", null);
+        final Button searchBtn = DesignSystem.createPrimaryButton(this, "Buscar", null);
         buttons.addView(searchBtn, new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-        View prevMatchBtn = DesignSystem.iconButton(this, "back", DesignSystem.TEXT_SECONDARY, null);
-        View nextMatchBtn = DesignSystem.iconButton(this, "chevron", DesignSystem.TEXT_SECONDARY, null);
+        final View prevMatchBtn = DesignSystem.iconButton(this, "back", DesignSystem.TEXT_SECONDARY,
+                "Resultado anterior", null);
+        final View nextMatchBtn = DesignSystem.iconButton(this, "chevron", DesignSystem.TEXT_SECONDARY,
+                "Resultado siguiente", null);
         LinearLayout.LayoutParams arrowLp = new LinearLayout.LayoutParams(
-                DesignSystem.dp(this, DesignSystem.TOUCH_MIN), DesignSystem.dp(this, DesignSystem.TOUCH_MIN));
+                DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT), DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
         arrowLp.setMargins(DesignSystem.dp(this, DesignSystem.SP_S), 0, 0, 0);
         buttons.addView(prevMatchBtn, arrowLp);
         buttons.addView(nextMatchBtn, new LinearLayout.LayoutParams(arrowLp));
 
-        final TextView statusView = DesignSystem.text(this, "", DesignSystem.TEXT_CAPTION,
+        final TextView statusView = DesignSystem.text(this,
+                "Busca una palabra o frase del documento.", DesignSystem.TEXT_CAPTION,
                 DesignSystem.TEXT_SECONDARY, false);
         statusView.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_M), 0, 0);
         layout.addView(statusView);
-        updateSearchStatus(statusView);
 
         final android.app.Dialog dialog = DesignSystem.sheet(this, "Buscar en el documento",
                 layout, "Cerrar", null, null);
@@ -1307,27 +1364,43 @@ public class MainActivity extends Activity {
         searchBtn.setOnClickListener(v -> {
             String query = queryEdit.getText().toString();
             if (query.trim().isEmpty()) {
-                statusView.setText("Escribe un texto para buscar");
+                setSearchStatus(statusView, "Escribe un texto para buscar", DesignSystem.COLOR_ACCENT_AMBER);
                 return;
             }
-            statusView.setText("Buscando…");
+            setSearchStatus(statusView, "Buscando…", DesignSystem.COLOR_PRIMARY);
+            progress.setVisibility(View.VISIBLE);
+            searchBtn.setEnabled(false);
+            prevMatchBtn.setEnabled(false);
+            nextMatchBtn.setEnabled(false);
             final File file = activeFile;
             new Thread(() -> {
                 try {
                     final List<PdfTextSearchCore.SearchResult> found = new PdfTextSearchCore().search(file, query);
                     runOnUiThread(() -> {
+                        progress.setVisibility(View.GONE);
+                        searchBtn.setEnabled(true);
                         searchResults = found;
                         currentSearchIndex = found.isEmpty() ? -1 : 0;
-                        updateSearchStatus(statusView);
+                        prevMatchBtn.setEnabled(!found.isEmpty());
+                        nextMatchBtn.setEnabled(!found.isEmpty());
                         if (!found.isEmpty()) {
+                            updateSearchStatus(statusView);
                             jumpToSearchResult(0);
                         } else {
-                            statusView.setText("Sin coincidencias (o el PDF no tiene capa de texto)");
-                            Toast.makeText(this, "Sin coincidencias (o el PDF no tiene capa de texto)", Toast.LENGTH_LONG).show();
+                            setSearchStatus(statusView,
+                                    "Sin coincidencias (o el PDF no tiene capa de texto)",
+                                    DesignSystem.COLOR_ACCENT_AMBER);
+                            Toast.makeText(this, "Sin coincidencias (o el PDF no tiene capa de texto)",
+                                    Toast.LENGTH_LONG).show();
                         }
                     });
                 } catch (Exception e) {
-                    runOnUiThread(() -> statusView.setText("Error en la búsqueda: " + e.getMessage()));
+                    runOnUiThread(() -> {
+                        progress.setVisibility(View.GONE);
+                        searchBtn.setEnabled(true);
+                        setSearchStatus(statusView, "Error en la búsqueda: " + e.getMessage(),
+                                DesignSystem.COLOR_ACCENT_ROSE);
+                    });
                 }
             }).start();
         });
@@ -1341,13 +1414,20 @@ public class MainActivity extends Activity {
         return new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, weight);
     }
 
+    private void setSearchStatus(TextView statusView, String message, int color) {
+        statusView.setText(message);
+        statusView.setTextColor(color);
+        statusView.announceForAccessibility(message);
+    }
+
     private void updateSearchStatus(TextView statusView) {
         if (searchResults.isEmpty()) {
-            statusView.setText("Sin resultados");
+            setSearchStatus(statusView, "Sin resultados", DesignSystem.TEXT_SECONDARY);
         } else {
             PdfTextSearchCore.SearchResult r = searchResults.get(currentSearchIndex);
-            statusView.setText("Resultado " + (currentSearchIndex + 1) + " de " + searchResults.size() +
-                    " · Página " + (r.pageIndex + 1) + " · \"" + r.matched + "\"");
+            setSearchStatus(statusView, "Resultado " + (currentSearchIndex + 1) + " de " + searchResults.size() +
+                    " · Página " + (r.pageIndex + 1) + " · \"" + r.matched + "\"",
+                    DesignSystem.COLOR_ACCENT_GREEN);
         }
     }
 
@@ -1514,6 +1594,8 @@ public class MainActivity extends Activity {
 
         TextView title = DesignSystem.text(this, "Unir PDFs", DesignSystem.TEXT_TITLE,
                 DesignSystem.TEXT_PRIMARY, true);
+        title.setSingleLine(true);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         title.setPadding(DesignSystem.dp(this, DesignSystem.SP_S), 0, 0, 0);
         header.addView(title, new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -1562,10 +1644,10 @@ public class MainActivity extends Activity {
         mergeOrder = validOrder;
 
         if (mergeDocs.isEmpty()) {
-            TextView empty = new TextView(this);
-            empty.setText("No hay documentos. Importa dos PDF para poder unirlos.");
-            empty.setTextColor(DesignSystem.TEXT_SECONDARY);
-            mergeListContainer.addView(empty);
+            mergeListContainer.addView(DesignSystem.emptyState(this, "merge",
+                    "No hay documentos para unir",
+                    "Importa dos PDF para poder combinar sus páginas.",
+                    "Importar PDF", v -> openPdfPickerForMerge()));
             return;
         }
         for (PdfDocumentItem item : mergeDocs) mergeListContainer.addView(buildMergeRow(item));
@@ -1578,6 +1660,9 @@ public class MainActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setFocusable(true);
+        row.setContentDescription(item.getTitle() + ", " + (selected ? "seleccionado" : "no seleccionado")
+                + ", " + pageLabel(item.getPageCount()));
         row.setBackground(DesignSystem.createClickableCardDrawable(this,
                 selected ? DesignSystem.COLOR_PRIMARY_TINT : DesignSystem.SURFACE_CARD,
                 DesignSystem.SURFACE_CARD_PRESSED, DesignSystem.RADIUS_MD));
@@ -1626,23 +1711,24 @@ public class MainActivity extends Activity {
 
         View up = DesignSystem.iconButton(this, "up", DesignSystem.TEXT_SECONDARY,
                 v -> moveMergeItem(item.getId(), -1));
-        up.setMinimumWidth(DesignSystem.dp(this, 36));
-        up.setMinimumHeight(DesignSystem.dp(this, 36));
+        up.setMinimumWidth(DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
+        up.setMinimumHeight(DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
         row.addView(up, new LinearLayout.LayoutParams(
-                DesignSystem.dp(this, 36), DesignSystem.dp(this, 36)));
+                DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT), DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT)));
 
         View down = DesignSystem.iconButton(this, "down", DesignSystem.TEXT_SECONDARY,
                 v -> moveMergeItem(item.getId(), 1));
-        down.setMinimumWidth(DesignSystem.dp(this, 36));
-        down.setMinimumHeight(DesignSystem.dp(this, 36));
+        down.setMinimumWidth(DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
+        down.setMinimumHeight(DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
         row.addView(down, new LinearLayout.LayoutParams(
-                DesignSystem.dp(this, 36), DesignSystem.dp(this, 36)));
+                DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT), DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT)));
 
         row.setOnClickListener(v -> {
             if (mergeOrder.contains(item.getId())) mergeOrder.remove(item.getId());
             else mergeOrder.add(item.getId());
             rebuildMergeList();
         });
+        DesignSystem.addPressScale(row);
         return row;
     }
 
@@ -1780,7 +1866,9 @@ public class MainActivity extends Activity {
         chip.setPadding(DesignSystem.dp(this, DesignSystem.SP_S), DesignSystem.dp(this, 6),
                 DesignSystem.dp(this, DesignSystem.SP_S), DesignSystem.dp(this, 6));
         chip.setClickable(true);
-        chip.setMinimumHeight(DesignSystem.dp(this, 40));
+        chip.setFocusable(true);
+        chip.setContentDescription(label);
+        chip.setMinimumHeight(DesignSystem.dp(this, DesignSystem.TOUCH_COMFORT));
 
         chip.addView(Icons.view(this, icon, 15, DesignSystem.TEXT_SECONDARY));
         TextView t = DesignSystem.text(this, label, 11, DesignSystem.TEXT_PRIMARY, false);
@@ -1792,6 +1880,7 @@ public class MainActivity extends Activity {
         lp.setMargins(0, 0, DesignSystem.dp(this, 6), 0);
         chip.setLayoutParams(lp);
         chip.setOnClickListener(onClick);
+        DesignSystem.addPressScale(chip);
         return chip;
     }
 
@@ -1833,6 +1922,8 @@ public class MainActivity extends Activity {
 
         TextView headerTitle = DesignSystem.text(this, "Nuevo documento", DesignSystem.TEXT_TITLE,
                 DesignSystem.TEXT_PRIMARY, true);
+        headerTitle.setSingleLine(true);
+        headerTitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
         headerTitle.setPadding(DesignSystem.dp(this, DesignSystem.SP_S), 0, 0, 0);
         header.addView(headerTitle, new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -1841,20 +1932,24 @@ public class MainActivity extends Activity {
         ScrollView scroll = DesignSystem.screenScroll(this);
         LinearLayout form = DesignSystem.screenColumn(this);
 
-        form.addView(DesignSystem.bodyText(this,
-                "Redacta el contenido y PDF Studio lo maqueta en una página A4 lista para compartir."));
+        TextView intro = DesignSystem.bodyText(this,
+                "Redacta el contenido y PDF Studio lo maqueta en una página A4 lista para compartir.");
+        LinearLayout.LayoutParams introLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        introLp.setMargins(0, 0, 0, DesignSystem.dp(this, DesignSystem.SP_L));
+        form.addView(intro, introLp);
 
         TextView lTitle = DesignSystem.fieldLabel(this, "TÍTULO");
         LinearLayout.LayoutParams labelLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        labelLp.setMargins(0, DesignSystem.dp(this, DesignSystem.SP_XL), 0, 0);
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        labelLp.setMargins(0, DesignSystem.dp(this, DesignSystem.SP_S), 0, 0);
         form.addView(lTitle, labelLp);
 
         EditText editTitle = DesignSystem.createField(this, "Ej: Minuta de reunión", false);
         form.addView(editTitle);
 
         TextView lBody = DesignSystem.fieldLabel(this, "CONTENIDO");
-        lBody.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_L), 0, DesignSystem.dp(this, DesignSystem.SP_S));
+        lBody.setPadding(0, DesignSystem.dp(this, DesignSystem.SP_L), 0, 0);
         form.addView(lBody);
 
         EditText editBody = DesignSystem.createField(this, "Escribe aquí el contenido del PDF…", true);
@@ -1878,7 +1973,7 @@ public class MainActivity extends Activity {
         });
         LinearLayout.LayoutParams btnLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        btnLp.setMargins(0, DesignSystem.dp(this, DesignSystem.SP_XL), 0, 0);
+        btnLp.setMargins(0, DesignSystem.dp(this, DesignSystem.SP_L), 0, 0);
         form.addView(genBtn, btnLp);
 
         scroll.addView(form);
@@ -2042,13 +2137,13 @@ public class MainActivity extends Activity {
     private void loadDemoDocument() {
         try {
             File demo = creatorCore.createPdfFromText(
-                    "PDF Studio v3.5 - Documento de prueba",
+                    "PDF Studio v3.6 - Documento de prueba",
                     "Este PDF de ejemplo se ha generado localmente para probar el visor, la búsqueda de texto y las herramientas de página.\n\n" +
                     "Incluye: navegación y zoom, modo noche, marcadores, buscador con resaltado, extracción de rangos, unión de varios PDF, compresión JPEG y anotaciones.\n\n" +
                     "Busca la palabra 'ejemplo' con el botón de lupa para comprobar la búsqueda real dentro del contenido."
             );
-            storageManager.registerDocument("Guía Interactiva v3.5", demo.getAbsolutePath(), "", demo.length(), 1, true);
-            openPdfFile(demo, "Documento Demo v3.5");
+            storageManager.registerDocument("Guía Interactiva v3.6", demo.getAbsolutePath(), "", demo.length(), 1, true);
+            openPdfFile(demo, "Documento Demo v3.6");
         } catch (Exception e) {
             Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
